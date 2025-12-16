@@ -4,7 +4,7 @@ import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ usuario: "", contrasena: "", recordar: false });
+  const [form, setForm] = useState({ usuario: "", password: "", recordar: false });
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
@@ -22,7 +22,7 @@ export default function Login() {
     try {
       const res = await api.post("/auth/login", {
         usuario: form.usuario,
-        contrasena: form.contrasena,
+        password: form.password,
       });
 
       const { token, usuario, nombre } = res.data;
@@ -78,7 +78,7 @@ export default function Login() {
 
         <input
           type="password"
-          name="contrasena"
+          name="password"
           placeholder="CONTRASEÑA"
           value={form.contrasena}
           onChange={handleChange}

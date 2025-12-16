@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   db:
     image: postgres:15
@@ -16,33 +14,29 @@ services:
 
   backend:
     build:
-      context: ./server
+      context: ./backend-python
       dockerfile: Dockerfile
     container_name: gym-backend
     restart: always
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/gymdb
-      JWT_SECRET: clave-super-secreta
+      JWT_SECRET: clave-secreta
     ports:
-      - "5000:5000"
+      - "8000:8000"
     depends_on:
       - db
-    volumes:
-      - ./server:/app
-      - /app/node_modules
 
   frontend:
     build:
       context: ./client
       dockerfile: Dockerfile
     container_name: gym-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./client:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:
