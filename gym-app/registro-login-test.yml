@@ -1,0 +1,33 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 10  # 10 usuarios por segundo durante 30s = hasta 300 usuarios
+  payload:
+    path: "./usuarios.csv"
+    fields:
+      - nombre
+      - usuario
+      - correo
+      - contrasena
+
+scenarios:
+  - name: Registro y Login
+    flow:
+      - post:
+          url: "/api/auth/registro"
+          json:
+            nombre: "{{ nombre }}"
+            usuario: "{{ usuario }}"
+            correo: "{{ correo }}"
+            contrasena: "{{ contrasena }}"
+          expect:
+            - statusCode: 201
+      - think: 1
+      - post:
+          url: "/api/auth/login"
+          json:
+            usuario: "{{ usuario }}"
+            contrasena: "{{ contrasena }}"
+          expect:
+            - statusCode: 200
