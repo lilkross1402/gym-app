@@ -6,6 +6,8 @@ from app.database import engine, Base
 # Routers ya migrados
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
+from app.api.configuraciones import router as config_router
+
 
 app = FastAPI(
     title="Gym API",
@@ -21,6 +23,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.include_router(
+    config_router,
+    prefix="/api/configuraciones",
+    tags=["Configuraciones"]
 )
 
 # ============================

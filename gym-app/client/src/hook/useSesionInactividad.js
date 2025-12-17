@@ -2,18 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import api from "../services/api";
 
 export function useSesionInactividad({ onExpirar, onAdvertencia }) {
-  const [duracionSesion, setDuracionSesion] = useState(300000); // 5 minutos por defecto
-  const [tiempoAdvertencia, setTiempoAdvertencia] = useState(240000); // 4 minutos por defecto
+  const [duracionSesion, setDuracionSesion] = useState(null);
+  const [tiempoAdvertencia, setTiempoAdvertencia] = useState(null);
 
   const timeoutRef = useRef(null);
   const advertenciaRef = useRef(null);
 
+  // 🔹 Cargar configuración UNA SOLA VEZ
   useEffect(() => {
     const obtenerConfiguracion = async () => {
       try {
         const res = await api.get("/configuraciones");
-        setDuracionSesion(parseInt(res.data.duracion_sesion_inactividad));
-        setTiempoAdvertencia(parseInt(res.data.tiempo_advertencia_ms));
+
+        const duracion = Number(res.data.duracion_sesion_inactividad);
+        const advertencia = Number(res.data.tiempo_advertencia_ms);
+
+        // ⛔ Protección absoluta
+        if (duracion > 0 && advertencia > 0 && advertencia < duracion) {
+          setDuracionSesion(duracion);
+          setTiempoAdvertencia(advertencia);
+        } else {
+          console.error("⚠️ Configuración inválida de sesión", res.data);
+        }
       } catch (err) {
         console.error("⚠️ Error al obtener configuración de sesión:", err);
       }
@@ -22,33 +32,30 @@ export function useSesionInactividad({ onExpirar, onAdvertencia }) {
     obtenerConfiguracion();
   }, []);
 
+  // 🔹 NO arrancar timers hasta tener valores válidos
   useEffect(() => {
+    if (!duracionSesion || !tiempoAdvertencia) return;
+
     const resetTimeout = () => {
       clearTimeout(timeoutRef.current);
       clearTimeout(advertenciaRef.current);
 
-      // Mostrar advertencia antes de expirar
       advertenciaRef.current = setTimeout(() => {
-        if (typeof onAdvertencia === "function") {
-          onAdvertencia();
-        }
+        onAdvertencia && onAdvertencia();
       }, tiempoAdvertencia);
 
-      // Expirar sesión tras tiempo máximo
       timeoutRef.current = setTimeout(() => {
-        if (typeof onExpirar === "function") {
-          onExpirar();
-        }
+        onExpirar && onExpirar();
       }, duracionSesion);
     };
 
     const eventos = ["mousemove", "keydown", "scroll", "click"];
-    eventos.forEach((event) => window.addEventListener(event, resetTimeout));
+    eventos.forEach((e) => window.addEventListener(e, resetTimeout));
 
     resetTimeout();
 
     return () => {
-      eventos.forEach((event) => window.removeEventListener(event, resetTimeout));
+      eventos.forEach((e) => window.removeEventListener(e, resetTimeout));
       clearTimeout(timeoutRef.current);
       clearTimeout(advertenciaRef.current);
     };

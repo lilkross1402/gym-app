@@ -3,50 +3,57 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useSesionInactividad } from "../hook/useSesionInactividad";
 
-
 export default function Dashboard() {
   const navigate = useNavigate();
+
   const [usuario, setUsuario] = useState("");
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [tiempoMaximo, setTiempoMaximo] = useState(null);
   const [tiempoAdvertencia, setTiempoAdvertencia] = useState(null);
+  const token = localStorage.getItem("token");
+
   const menuRef = useRef(null);
 
-  // ⏱️ Hook personalizado de inactividad
-  useSesionInactividad({
-    tiempoInactividad: tiempoAdvertencia,
-    tiempoMaximo: tiempoMaximo,
-    onExpirar: () => {
-      alert("⚠️ Tu sesión ha expirado por inactividad.");
-      localStorage.clear();
-      navigate("/");
-    },
-    onAdvertencia: () => {
-      alert("⚠️ Tu sesión está por vencer. Haz clic o mueve el mouse para continuar.");
-    },
-  });
-
+  // ✅ Hook de inactividad SIEMPRE arriba
+useSesionInactividad({
+  onExpirar: () => {
+    alert("⚠️ Tu sesión ha expirado por inactividad.");
+    localStorage.clear();
+    navigate("/");
+  },
+  onAdvertencia: () => {
+    alert("⚠️ Tu sesión está por vencer.");
+  },
+});
   useEffect(() => {
-    const stored = localStorage.getItem("usuario");
+    const storedUsuario = localStorage.getItem("usuario");
     const token = localStorage.getItem("token");
 
-    if (!stored || !token) {
+    if (!storedUsuario || !token) {
       navigate("/login");
-    } else {
-      setUsuario(stored);
-      api.get("/user/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((res) => {
-        const { photo } = res.data;
-        if (photo) setFotoPerfil(photo);
-      }).catch((err) => {
-        console.error("Error al obtener imagen de perfil:", err);
-      });
+      return;
     }
 
-    // 👉 Obtener parámetros desde la base de datos
-    api.get("/configuraciones")
+    setUsuario(storedUsuario);
+
+    // 🔹 Perfil
+    api
+      .get("/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        if (res.data?.photo) {
+          setFotoPerfil(res.data.photo);
+        }
+      })
+      .catch((err) => {
+        console.error("Error al obtener imagen de perfil:", err);
+      });
+
+    // 🔹 Configuración de sesión
+    api
+      .get("/configuraciones")
       .then((res) => {
         setTiempoMaximo(res.data.duracion_sesion_inactividad);
         setTiempoAdvertencia(res.data.tiempo_advertencia_ms);
@@ -55,12 +62,13 @@ export default function Dashboard() {
         console.error("Error al obtener configuración de sesión:", err);
       });
 
-    // 👂 Cierre del menú
+    // 🔹 Cierre del menú
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuVisible(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [navigate]);
@@ -95,7 +103,7 @@ export default function Dashboard() {
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => setMenuVisible((prev) => !prev)}
           >
-            <span className="text-white font-semibold">Bienvenido, {usuario}</span>
+            <span className="font-semibold">Bienvenido, {usuario}</span>
             <img
               src={fotoPerfil || "https://i.pravatar.cc/40"}
               alt="Perfil"
@@ -134,9 +142,7 @@ export default function Dashboard() {
               <div
                 key={idx}
                 className="bg-white bg-opacity-50 rounded-xl shadow p-6 transition hover:shadow-2xl hover:scale-[1.03] hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  if (item.route) navigate(item.route);
-                }}
+                onClick={() => item.route && navigate(item.route)}
               >
                 <h2 className="text-lg font-bold mb-2">
                   {item.icon} {item.title}
