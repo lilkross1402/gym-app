@@ -13,6 +13,8 @@ import ClasesInscritas from './pages/ClasesInscritas';
 import Horarios from './pages/Horarios'; // ✅ Importación añadida
 import Testimonios from './pages/Testimonios'; // ✅ Importación añadida
 import Contactanos from "./pages/Contactanos";
+import PrivateRoute from "./routes/PrivateRoute";
+import Profile from "./pages/Profile";
 
 function AppContent() {
   const location = useLocation();
@@ -40,10 +42,14 @@ function AppContent() {
         <Route path="/horarios" element={<Horarios />} />
         <Route path="/testimonios" element={<Testimonios />} /> 
         <Route path="/contacto" element={<Contactanos />} />
+        <Route path="/dashboard"element={<PrivateRoute><Dashboard /></PrivateRoute>}/>
+        <Route path="/profile"element={<PrivateRoute><Profile /></PrivateRoute>}/>
       </Routes>
     </>
   );
 }
+
+
 
 function App() {
   return (
